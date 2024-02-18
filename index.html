@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spasibo Token Distributor</title>
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #1e1e1e;
+            color: #fff;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            background-color: #333;
+            color: #fff;
+        }
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .balance {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Spasibo Token Distributor</h1>
+        <div class="balance" id="balance"></div>
+        <form id="tokenForm">
+            <input type="text" id="addressInput" placeholder="Enter your Ethereum address">
+            <input type="submit" value="Get Token">
+        </form>
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        document.getElementById('tokenForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var address = document.getElementById('addressInput').value;
+            getToken(address);
+        });
+
+        function getToken(address) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'http://127.0.0.1:5000/get_token', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var responseData = JSON.parse(xhr.responseText);
+                    displayMessage("Token successfully distributed to address: " + address);
+                    fetchBalance();
+                } else {
+                    displayMessage("Error: " + xhr.statusText);
+                }
+            };
+            xhr.onerror = function() {
+                displayMessage("Error: Network request failed");
+            };
+            console.log(address)
+            xhr.send(JSON.stringify({ to_address: address }));
+            // var messageElement = document.getElementById('message');
+            // var newMessage = document.createElement('div');
+            // newMessage.textContent = "Token successfully distributed to address: " + address;
+            // messageElement.appendChild(newMessage);
+            // fetchBalance();
+        }
+
+        function fetchBalance() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'http://127.0.0.1:5000/get_balance', true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var responseData = JSON.parse(xhr.responseText);
+                    displayBalance("Current balance: " + responseData.balance + " Spasibo");
+                } else {
+                    displayBalance("Error: " + xhr.statusText);
+                }
+            };
+            xhr.onerror = function() {
+                displayBalance("Error: Network request failed");
+            };
+            xhr.send();
+            // var randomBalance = Math.floor(Math.random() * 1000);
+            // displayBalance("Current balance: " + randomBalance + " Spasibo");
+        }
+
+        function displayMessage(message) {
+            var messageElement = document.getElementById('message');
+            var newMessage = document.createElement('div');
+            newMessage.textContent = message;
+            messageElement.appendChild(newMessage);
+        }
+
+        function displayBalance(balance) {
+            var balanceElement = document.getElementById('balance');
+            balanceElement.textContent = balance;
+        }
+
+        // Fetch initial balance when the page loads
+        fetchBalance();
+    </script>
+</body>
+</html>
