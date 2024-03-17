@@ -79,4 +79,4 @@ def send_tokens(from_address, to_address):
 
 
 if __name__ == "__main__":
-    print(send_tokens(account_address, "0x779877A7B0D9E8603169DdbD7836e478b4624789"))
+    app.run(debug=True, host="0.0.0.0")
