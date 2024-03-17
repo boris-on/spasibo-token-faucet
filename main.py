@@ -44,7 +44,8 @@ def get_balance():
 @app.route('/get_token', methods=['POST'])
 @cross_origin()
 def get_token():
-    to_address = request.args.get('to_address')
+    data = request.json
+    to_address = data.get('to_address')
     print(to_address)
     hash = send(account_address, to_address)
     return jsonify({'transaction_hash': hash})
@@ -72,4 +73,4 @@ def send(from_address, to_address):
     return txn_hash
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
