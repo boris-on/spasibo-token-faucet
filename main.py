@@ -4,73 +4,79 @@ from eth_account import Account
 import json
 from flask_cors import CORS, cross_origin
 
-with open('config.json', 'r') as config_file:
+# Load configuration from JSON file
+with open("config.json", "r") as config_file:
     config = json.load(config_file)
 
+# Initialize variables from config
 mnemonic = config["mnemonic"]
 account_address = config["account_address"]
 blockchain_url = config["blockchain_url"]
 token_contract_address = config["token_contract_address"]
+private_key = config["private_key"]
 
+# Initialize Web3
 w3 = Web3(Web3.HTTPProvider(blockchain_url))
-print(w3.is_connected(show_traceback=True))
 account = w3.eth.account
 account.enable_unaudited_hdwallet_features()
 account.from_mnemonic(mnemonic)
 
-with open('abi.json', 'r') as file:
-    abi = json.load(file)
+# Load ABI from JSON file
+with open("abi.json", "r") as abi_file:
+    abi = json.load(abi_file)
 
-
+# Initialize Flask app
 app = Flask(__name__)
 cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
+app.config["CORS_HEADERS"] = "Content-Type"
 
-@app.route('/')
+
+# Route to serve index.html
+@app.route("/")
 @cross_origin()
 def index():
-    with open('index.html', 'r') as file:
+    with open("index.html", "r") as file:
         content = file.read()
-    get_balance()
-
     return content
 
-@app.route('/get_balance', methods=['GET'])
+
+# Route to get token balance
+@app.route("/get_balance", methods=["GET"])
 @cross_origin()
 def get_balance():
     balance = get_token_balance()
-    return jsonify({'balance': balance})
+    return jsonify({"balance": balance})
 
-@app.route('/get_token', methods=['POST'])
+
+# Route to transfer tokens
+@app.route("/get_token", methods=["POST"])
 @cross_origin()
 def get_token():
     data = request.json
-    to_address = data.get('to_address')
-    print(to_address)
-    hash = send(account_address, to_address)
-    return jsonify({'transaction_hash': hash})
+    to_address = data.get("to_address")
+    hash = send_tokens(account_address, to_address)
+    return jsonify({"transaction_hash": hash})
 
+
+# Function to get token balance
 def get_token_balance():
     contract = w3.eth.contract(address=token_contract_address, abi=abi)
-
     balance = contract.functions.balanceOf(account_address).call()
-    return balance / (10 ** 18)
+    return balance / (10**18)
 
-def send(from_address, to_address):
-    dict_transaction = {
-        'from': from_address,
-    }
-    print(from_address, to_address)
+
+# Function to send tokens
+def send_tokens(from_address, to_address):
+    nonce = w3.eth.get_transaction_count(from_address)
+    dict_transaction = {"from": from_address, "nonce": nonce}
     contract = w3.eth.contract(address=token_contract_address, abi=abi)
-
     transaction = contract.functions.transfer(
-        to_address, 1000 * 10 ** 18
-    ).buildTransaction(dict_transaction)
+        to_address, 1000 * 10**18
+    ).build_transaction(dict_transaction)
+    signed_txn = account.sign_transaction(transaction, private_key)
+    txn_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    return txn_hash.hex()
 
-    signed_txn = account.sign_transaction(transaction)
 
-    txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-    return txn_hash
-
-if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")
+if __name__ == "__main__":
+    print(send_tokens(account_address, "0x779877A7B0D9E8603169DdbD7836e478b4624789"))
